@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Prioritizing Content for Search Review</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.7;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 1050px;
+      margin: 0 auto;
+      padding: 40px 24px 70px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #111827, #334155);
+      color: white;
+      padding: 55px 24px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 42px;
+      margin: 0 0 15px;
+    }
+
+    header p {
+      max-width: 760px;
+      margin: auto;
+      font-size: 18px;
+      color: #e5e7eb;
+    }
+
+    section {
+      background: white;
+      margin: 24px 0;
+      padding: 30px;
+      border-radius: 14px;
+      box-shadow: 0 5px 18px rgba(0,0,0,0.06);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 10px;
+    }
+
+    h3 {
+      color: #334155;
+    }
+
+    .abstract {
+      font-size: 17px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 18px;
+      margin: 25px 0;
+    }
+
+    .metric {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid #e5e7eb;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 30px;
+      margin-bottom: 5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+
+    th {
+      background: #f1f5f9;
+    }
+
+    .bar-row {
+      margin: 16px 0;
+    }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .bar {
+      height: 18px;
+      background: #e5e7eb;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      background: #334155;
+      border-radius: 20px;
+    }
+
+    .note {
+      background: #f8fafc;
+      border-left: 4px solid #64748b;
+      padding: 15px 18px;
+      margin: 20px 0;
+    }
+
+    .recommendation {
+      padding: 16px;
+      margin: 12px 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 5px;
+    }
+
+    a {
+      color: #334155;
+    }
+
+    footer {
+      text-align: center;
+      color: #64748b;
+      padding: 25px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 700px) {
+      header h1 {
+        font-size: 30px;
+      }
+
+      section {
+        padding: 22px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Prioritizing Content for Search Review</h1>
+  <p>
+    A machine-learning decision-support workflow for identifying pages
+    that should be reviewed first for a possible content action.
+  </p>
+</header>
+
+<div class="container">
+
+  <!-- 1. ABSTRACT -->
+  <section>
+    <h2>Abstract</h2>
+
+    <p class="abstract">
+      This study asks which pages should be reviewed first for a possible
+      content refresh using observable search and content signals.
+      A Random Forest was trained using February 2026 feature-window data
+      and evaluated against a simple warehouse-native visibility baseline
+      using a client-grouped test split.
+      The Random Forest achieved Precision@50 of 0.960 compared with 0.000
+      for the baseline on the chosen March outcome proxy.
+      The model relied most strongly on average GSC impressions and average
+      GSC position in this evaluation.
+      These results provide directional decision-support for prioritizing
+      human review and should not be interpreted as causal evidence that
+      refreshing a page will improve its performance.
+    </p>
+
+    <div class="metric-grid">
+      <div class="metric">
+        <strong>0.960</strong>
+        Random Forest Precision@50
+      </div>
+
+      <div class="metric">
+        <strong>0.000</strong>
+        Warehouse baseline Precision@50
+      </div>
+
+      <div class="metric">
+        <strong>303,572</strong>
+        Model dataset rows
+      </div>
+
+      <div class="metric">
+        <strong>0</strong>
+        Client overlap
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. INTRODUCTION -->
+  <section>
+    <h2>1. Introduction / Problem Statement</h2>
+
+    <p>
+      Content teams often have more pages available for review than they can
+      inspect manually. The practical problem is therefore not simply to
+      identify whether a page is good or bad, but to decide which pages
+      deserve attention first.
+    </p>
+
+    <p>
+      This project studies a decision-support approach for the
+      <strong>Refresh / Content Opportunity Scoring</strong> lane.
+      The research question is:
+    </p>
+
+    <div class="note">
+      <strong>Which pages should be reviewed first for a possible content
+      refresh based on observable search and content signals?</strong>
+    </div>
+
+    <p>
+      The model produces a prioritized queue. A human reviewer remains
+      responsible for determining whether the appropriate action is to
+      refresh, expand, protect, prune, monitor, or take no action.
+    </p>
+  </section>
+
+  <!-- 3. DATA -->
+  <section>
+    <h2>2. Data</h2>
+
+    <p>
+      The analysis uses the FlyRank internship warehouse release accessed
+      through Hugging Face.
+    </p>
+
+    <table>
+      <tr>
+        <th>Item</th>
+        <th>Choice</th>
+      </tr>
+
+      <tr>
+        <td>Feature window</td>
+        <td>February 2026</td>
+      </tr>
+
+      <tr>
+        <td>Outcome window</td>
+        <td>March 2026</td>
+      </tr>
+
+      <tr>
+        <td>Main table</td>
+        <td><code>fact_content_daily_performance</code></td>
+      </tr>
+
+      <tr>
+        <td>Unit of analysis</td>
+        <td>One client-content item</td>
+      </tr>
+
+      <tr>
+        <td>Model features</td>
+        <td>
+          GSC impressions, GSC clicks, average GSC position,
+          GA4 sessions, scroll events
+        </td>
+      </tr>
+    </table>
+
+    <p>
+      Client and content identifiers were used for grouping and joining,
+      but were not used as predictive model features.
+    </p>
+
+    <p>
+      The final-month sample was not used for feature development because it
+      represents the sealed final outcome month.
+    </p>
+
+    <div class="note">
+      The public paper intentionally does not expose raw client identifiers,
+      content identifiers, private queries, credentials, or raw warehouse
+      exports.
+    </div>
+  </section>
+
+  <!-- 4. METHODOLOGY -->
+  <section>
+    <h2>3. Methodology</h2>
+
+    <h3>Target / outcome proxy</h3>
+
+    <p>
+      The target is based on the March outcome window:
+      <code>March GSC impressions = 0</code>.
+      This is treated as an observed outcome proxy rather than direct proof
+      that a page needs a refresh.
+    </p>
+
+    <h3>Feature set</h3>
+
+    <p>
+      Five observable February feature-window signals were used:
+    </p>
+
+    <ul>
+      <li>Average GSC impressions</li>
+      <li>Average GSC clicks</li>
+      <li>Average GSC position</li>
+      <li>Average GA4 sessions</li>
+      <li>Average scroll events</li>
+    </ul>
+
+    <h3>Model</h3>
+
+    <p>
+      A Random Forest classifier was selected because the task can contain
+      non-linear relationships and interactions between observable search
+      and engagement signals.
+    </p>
+
+    <h3>Baseline</h3>
+
+    <p>
+      The comparison baseline is a simple warehouse-native visibility rule
+      based on February average GSC impressions.
+      It provides a transparent reference point for judging whether the
+      model extracts additional signal.
+    </p>
+
+    <h3>Validation</h3>
+
+    <p>
+      The evaluation uses a client-grouped train/test split:
+    </p>
+
+    <table>
+      <tr>
+        <th>Split</th>
+        <th>Rows</th>
+        <th>Clients</th>
+      </tr>
+
+      <tr>
+        <td>Training</td>
+        <td>264,134</td>
+        <td>40</td>
+      </tr>
+
+      <tr>
+        <td>Test</td>
+        <td>39,438</td>
+        <td>10</td>
+      </tr>
+    </table>
+
+    <p>
+      Client overlap between training and test was zero.
+      This prevents pages from the same client appearing in both groups.
+    </p>
+
+    <h3>Leakage check</h3>
+
+    <p>
+      A deliberate experiment introduced a March outcome-derived feature.
+      The resulting Precision@50 rose to 1.000, demonstrating why future
+      outcome information must not be used as a model feature.
+      The leaked feature was removed from the honest feature set.
+    </p>
+
+    <h3>Evaluation metric</h3>
+
+    <p>
+      <strong>Precision@50</strong> is the primary metric because the practical
+      decision is to prioritize the first 50 pages for limited human review.
+    </p>
+  </section>
+
+  <!-- 5. RESULTS -->
+  <section>
+    <h2>4. Results</h2>
+
+    <p>
+      On the client-held-out test set, the Random Forest substantially
+      outperformed the simple warehouse-native baseline for the selected
+      March outcome proxy.
+    </p>
+
+    <table>
+      <tr>
+        <th>Method</th>
+        <th>Precision@50</th>
+      </tr>
+
+      <tr>
+        <td>Warehouse baseline</td>
+        <td>0.000</td>
+      </tr>
+
+      <tr>
+        <td><strong>Random Forest</strong></td>
+        <td><strong>0.960</strong></td>
+      </tr>
+    </table>
+
+    <div class="bar-row">
+      <div class="bar-label">
+        <span>Warehouse baseline</span>
+        <span>0.000</span>
+      </div>
+      <div class="bar">
+        <div class="fill" style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <div class="bar-row">
+      <div class="bar-label">
+        <span>Random Forest</span>
+        <span>0.960</span>
+      </div>
+      <div class="bar">
+        <div class="fill" style="width: 96%;"></div>
+      </div>
+    </div>
+
+    <div class="note">
+      In this evaluation, 48 of the top 50 Random Forest-ranked rows matched
+      the target proxy. There were 2 non-target rows in the top 50.
+    </div>
+
+    <h3>Feature importance</h3>
+
+    <div class="bar-row">
+      <div class="bar-label">
+        <span>Average GSC impressions</span>
+        <span>0.543</span>
+      </div>
+      <div class="bar">
+        <div class="fill" style="width: 54.3%;"></div>
+      </div>
+    </div>
+
+    <div class="bar-row">
+      <div class="bar-label">
+        <span>Average GSC position</span>
+        <span>0.372</span>
+      </div>
+      <div class="bar">
+        <div class="fill" style="width: 37.2%;"></div>
+      </div>
+    </div>
+
+    <div class="bar-row">
+      <div class="bar-label">
+        <span>Average GSC clicks</span>
+        <span>0.073</span>
+      </div>
+      <div class="bar">
+        <div class="fill" style="width: 7.3%;"></div>
+      </div>
+    </div>
+
+    <div class="bar-row">
+      <div class="bar-label">
+        <span>Average GA4 sessions</span>
+        <span>0.010</span>
+      </div>
+      <div class="bar">
+        <div class="fill" style="width: 1%;"></div>
+      </div>
+    </div>
+
+    <div class="bar-row">
+      <div class="bar-label">
+        <span>Average scroll events</span>
+        <span>0.002</span>
+      </div>
+      <div class="bar">
+        <div class="fill" style="width: 0.2%;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. LIMITATIONS -->
+  <section>
+    <h2>5. Limitations &amp; Honest Framing</h2>
+
+    <p>
+      The March target is a proxy based on zero summed GSC impressions.
+      It is not a direct label for whether a page needs a content refresh.
+    </p>
+
+    <p>
+      A zero March-impressions outcome may also reflect data-availability
+      conditions, so the target should not be interpreted as a direct
+      measurement of content quality or refresh need.
+    </p>
+
+    <p>
+      Some feature fields have substantial missingness. In the modeling
+      dataset, average GSC position has 158,293 missing rows, while average
+      GA4 sessions and average scroll events each have 131,711 missing rows.
+    </p>
+
+    <p>
+      Precision@50 describes only the highest-priority 50 rows and does not
+      describe the quality of the entire ranking.
+    </p>
+
+    <p>
+      Several model scores are tied. Therefore, the exact ordering within a
+      tied group should not be treated as meaningful.
+    </p>
+
+    <p>
+      The analysis is observational. It can identify measured and directional
+      patterns and provide decision-support, but it cannot prove that a
+      content action caused improvement, nor can it predict Google's ranking
+      algorithm.
+    </p>
+  </section>
+
+  <!-- 7. RECOMMENDATIONS -->
+  <section>
+    <h2>6. Ranked Recommendations</h2>
+
+    <p>
+      The model output is best interpreted as a review queue.
+      Pages near the top should be inspected earlier because their model
+      scores are higher for the selected outcome proxy.
+    </p>
+
+    <div class="recommendation">
+      <strong>Priority group 1 — Review first</strong><br>
+      Inspect high-scoring pages for a possible content action.
+    </div>
+
+    <div class="recommendation">
+      <strong>Priority group 2 — Secondary review</strong><br>
+      Inspect pages with moderately high model scores after the first group.
+    </div>
+
+    <div class="recommendation">
+      <strong>Human decision required</strong><br>
+      Review search intent, current content, context, and business importance
+      before choosing refresh, expansion, protection, pruning, monitoring, or
+      no action.
+    </div>
+
+    <div class="note">
+      Model scores are prioritization evidence, not automatic content
+      instructions.
+    </div>
+  </section>
+
+  <!-- 8. REPRODUCIBILITY -->
+  <section>
+    <h2>7. Reproducibility</h2>
+
+    <p>
+      The analysis is implemented in the capstone notebook in the project
+      repository. The notebook loads the FlyRank internship warehouse through
+      DuckDB, builds the February feature window, creates the March outcome
+      proxy, performs a client-grouped train/test split, trains the Random
+      Forest, evaluates Precision@50, and generates the ranked recommendation
+      output and figures.
+    </p>
+
+    <p>
+      Repository:
+      <a href="https://github.com/Srinadh2314/srinadh-flyrank-intership"
+         target="_blank" rel="noopener">
+        github.com/Srinadh2314/srinadh-flyrank-intership
+      </a>
+    </p>
+  </section>
+
+  <!-- 9. DATA CREDIT -->
+  <section>
+    <h2>8. Acknowledgments &amp; Data Credit</h2>
+
+    <p>
+      Built on the FlyRank ML Internship dataset.
+    </p>
+
+    <p>
+      Data source:
+      <a href="https://flyrank.ai"
+         target="_blank" rel="noopener">
+        FlyRank
+      </a>
+    </p>
+  </section>
+
+  <!-- 10. EXTRA -->
+  <section>
+    <h2>9. Project Takeaway</h2>
+
+    <p>
+      The main practical finding is that a transparent machine-learning
+      ranking can provide stronger prioritization than a simple visibility
+      baseline for the selected outcome proxy under the tested client-held-out
+      split.
+    </p>
+
+    <p>
+      The strongest model signals were average GSC impressions and average
+      GSC position. The appropriate operational use is to help a reviewer
+      decide where to look first, while retaining human judgment over the
+      final content action.
+    </p>
+
+    <p>
+      The result should be treated as a measured experiment rather than a
+      guarantee of future search performance.
+    </p>
+  </section>
+
+  <!-- ML-12 -->
+  <section>
+    <h2>Demo &amp; Communication Summary</h2>
+
+    <h3>5-minute demo outline</h3>
+
+    <p>
+      <strong>0:00–0:45:</strong> Introduce the content-prioritization problem.
+    </p>
+
+    <p>
+      <strong>0:45–1:30:</strong> Explain the February feature window, March
+      outcome window, five observable features, and client-grouped validation.
+    </p>
+
+    <p>
+      <strong>1:30–2:30:</strong> Show the baseline versus Random Forest
+      Precision@50 comparison.
+    </p>
+
+    <p>
+      <strong>2:30–3:30:</strong> Explain the strongest feature signals.
+    </p>
+
+    <p>
+      <strong>3:30–4:30:</strong> Show the review-prioritization workflow.
+    </p>
+
+    <p>
+      <strong>4:30–5:00:</strong> Explain the target proxy and limitations.
+    </p>
+
+    <h3>Social-post cut</h3>
+
+    <p>
+      I built a search-content prioritization workflow using the FlyRank
+      internship warehouse. A client-grouped Random Forest achieved
+      Precision@50 of 0.960 versus 0.000 for a simple warehouse visibility
+      baseline on the selected outcome proxy. The result is directional
+      decision-support for prioritizing human review, not proof of causal
+      content impact.
+    </p>
+
+    <h3>Employer-facing summary</h3>
+
+    <p>
+      I built an end-to-end ML workflow that turns search and content signals
+      into a prioritized review queue. I used client-grouped validation,
+      explicit leakage checks, a transparent baseline, and a Random Forest
+      model with Precision@50 as the main ranking metric. The project
+      demonstrates practical model evaluation, feature interpretation, and
+      responsible use of ML for decision-support.
+    </p>
+  </section>
+
+</div>
+
+<footer>
+  Google Search Ranking &amp; Discoverability Capstone · Refresh / Content Opportunity Scoring
+</footer>
+
+</body>
+</html>
